@@ -53,14 +53,15 @@ def _parse_person(person_nearby: Optional[str]) -> Optional[bool]:
 
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request})
+    # Starlette 新版签名: TemplateResponse(request, name, context=...)
+    return templates.TemplateResponse(request, "index.html")
 
 
 @app.get("/en", response_class=HTMLResponse)
 @app.get("/en/", response_class=HTMLResponse)
 async def index_en(request: Request):
     """English UI (files live in english_web/). Chinese UI at / is unchanged."""
-    return en_templates.TemplateResponse("index.html", {"request": request})
+    return en_templates.TemplateResponse(request, "index.html")
 
 
 @app.post("/api/analyze")
