@@ -1,0 +1,44 @@
+{
+  "safety_principle": "宁可转人工复核，避免漏报真实火情",
+  "decision_labels": ["疑似真实火情", "疑似误报", "建议人工复核"],
+  "false_alarm_types": {
+    "强光误报": {
+      "typical": "阳光反射",
+      "rules": ["高亮", "边缘锐利", "无烟雾", "位置相对固定"],
+      "person_needed": false
+    },
+    "祭祀用火误报": {
+      "typical": "小火点、烧纸、短时烟火",
+      "rules": ["火点小", "持续短", "无蔓延"],
+      "person_needed": true,
+      "person_note": "烟源/火点附近是否有人，仅作辅助，不能单独判定"
+    },
+    "农业用火误报": {
+      "typical": "秸秆焚烧、田间烧荒",
+      "rules": ["烟源偏农田或村边", "可能有车辆或作业痕迹"],
+      "person_needed": true,
+      "person_note": "烟源附近是否有人/车辆，仅作辅助"
+    },
+    "工厂排气误报": {
+      "typical": "烟囱、厂房、白烟/蒸汽",
+      "rules": ["烟源固定", "周边疑似厂房或烟囱"],
+      "person_needed": false
+    },
+    "云雾误报": {
+      "typical": "山间雾气、低云",
+      "rules": ["大面积", "边界模糊", "无明显烟源", "无火点"],
+      "person_needed": false,
+      "note": "与真实烟雾极易混淆，默认不得直接输出疑似误报，应转人工复核"
+    }
+  },
+  "thresholds": {
+    "bright_ratio_strong_light": 0.08,
+    "fire_area_ratio_small": 0.0015,
+    "fire_area_ratio_large": 0.015,
+    "smoke_area_ratio_small": 0.008,
+    "smoke_area_ratio_large": 0.12,
+    "edge_sharpness_high": 80.0,
+    "confidence_high": 0.75,
+    "confidence_low": 0.45
+  }
+}

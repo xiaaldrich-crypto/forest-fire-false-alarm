@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ForestGuard · Secondary False-Alarm Verification</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Noto+Sans:wght@400;500;600;700&family=Noto+Serif:wght@600;700&family=Syne:wght@600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/static-en/style.css" />
+</head>
+<body>
+  <div class="atmosphere" aria-hidden="true"></div>
+
+  <header class="topbar">
+    <div class="brand-block">
+      <div class="mark" aria-hidden="true"></div>
+      <div>
+        <p class="brand-en">ForestGuard Command</p>
+        <h1 class="brand-zh">Forest Fire False-Alarm Secondary Verification</h1>
+      </div>
+    </div>
+    <div class="top-meta">
+      <span class="pill live"><i></i>Engine online</span>
+      <span class="pill soft">CV · Rules · VL</span>
+      <time id="clock"></time>
+    </div>
+  </header>
+
+  <div class="app-shell">
+    <aside class="history-rail">
+      <div class="rail-head">
+        <h2>Task history</h2>
+        <button type="button" id="clearHistory" class="linkish">Clear</button>
+      </div>
+      <p class="rail-hint">Completed jobs appear here. Click an item to reopen its outputs.</p>
+      <ul id="historyList" class="history-list"></ul>
+      <div id="historyEmpty" class="history-empty">No tasks yet · uploads are archived automatically</div>
+    </aside>
+
+    <main class="main-stage">
+      <section class="ingest-card">
+        <div class="section-head row">
+          <div>
+            <h2>Alarm ingest</h2>
+            <p>Upload an image or video and view verification outputs on this page</p>
+          </div>
+          <div class="pipeline compact" id="pipeline">
+            <div class="step" data-step="opencv"><b>1</b>Features</div>
+            <div class="step" data-step="rules"><b>2</b>Rules</div>
+            <div class="step" data-step="llm"><b>3</b>Multimodal</div>
+            <div class="step" data-step="merge"><b>4</b>Fusion</div>
+          </div>
+        </div>
+
+        <form id="form" class="ingest-grid" action="#" method="post">
+          <div class="drop-col">
+            <div class="dropzone" id="dropzone" aria-label="Upload alarm media">
+              <input type="file" id="file" class="file-input-overlay" accept="image/*,video/mp4,video/avi,video/quicktime,video/webm,.mp4,.avi,.mov,.mkv,.webm" />
+              <div class="dz-body" id="dzBody">
+                <div class="dz-visual"><span class="dz-ring"></span><span class="dz-icon"></span></div>
+                <strong id="fileLabel">Drag &amp; drop alarm media here</strong>
+                <span class="dz-hint">JPG / PNG / MP4 / MOV · results appear below after verification</span>
+                <span class="btn-ghost slim choose-btn" id="chooseFileBtn">Choose file</span>
+              </div>
+              <div class="preview-wrap" id="previewWrap" hidden>
+                <img id="previewImg" alt="Preview" hidden />
+                <video id="previewVideo" muted playsinline hidden></video>
+                <span id="previewName" class="preview-name"></span>
+                <span class="btn-ghost slim choose-btn on-preview" id="chooseFileBtn2">Change file</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="ingest-side">
+            <label class="field">
+              <span>People near the smoke/fire source?</span>
+              <select id="person">
+                <option value="unknown">Unknown</option>
+                <option value="true">Yes (auxiliary cue)</option>
+                <option value="false">No</option>
+              </select>
+            </label>
+            <button type="submit" id="submitBtn" class="btn-primary">
+              <span class="btn-label">Start secondary verification</span>
+              <span class="btn-spin" hidden></span>
+            </button>
+            <div class="batch-mini">
+              <button id="batchBtn" type="button" class="btn-ghost">Batch-export sample library</button>
+              <p id="batchMsg" class="batch-msg"></p>
+            </div>
+          </div>
+        </form>
+      </section>
+
+      <section class="output-deck" id="outputDeck">
+        <div class="section-head">
+          <h2>Verification output</h2>
+          <p id="resultHint">Waiting for a job · verdict, layers, and features will appear here</p>
+        </div>
+
+        <div class="empty-board" id="resultEmpty">
+          <div class="empty-orbit" aria-hidden="true"></div>
+          <p class="empty-title">Output console on standby</p>
+          <p>After upload and verification, the final verdict, visualization layers, feature gauges, and decision chain are shown here</p>
+        </div>
+
+        <div class="process-board" id="processBoard" hidden>
+          <p class="eyebrow">PIPELINE RUNNING</p>
+          <p class="process-title" id="processTitle">Secondary verification in progress…</p>
+          <div class="process-track">
+            <div class="process-bar"><i id="processBar"></i></div>
+            <p class="process-pct" id="processPct">0%</p>
+          </div>
+          <ul class="process-steps" id="processSteps">
+            <li data-p="opencv">Feature extraction · OpenCV frames &amp; fire/smoke masks</li>
+            <li data-p="rules">Rule screening · false-alarm type scoring</li>
+            <li data-p="llm">Multimodal review · vision-language model</li>
+            <li data-p="merge">Fusion decision · final verdict</li>
+          </ul>
+          <p class="process-note" id="processNote">Please wait — video jobs may take longer</p>
+        </div>
+
+        <div id="result" class="result-board" hidden>
+          <header class="verdict-hero" id="verdictHero">
+            <div>
+              <p class="eyebrow">FINAL VERDICT</p>
+              <div id="decision" class="decision"></div>
+              <p id="reason" class="reason"></p>
+            </div>
+            <div class="verdict-side">
+              <div class="stat-chip"><span>Media</span><strong id="mediaTag">—</strong></div>
+              <div class="stat-chip"><span>Confidence</span><strong id="confTag">—</strong></div>
+              <div class="stat-chip"><span>Job ID</span><strong id="jobTag">—</strong></div>
+              <div class="stat-chip"><span>False-alarm type</span><strong id="typeTag">—</strong></div>
+            </div>
+          </header>
+
+          <div class="panel-block" id="fullVideoPanel" hidden>
+            <div class="panel-title">
+              <h3>Full video playback</h3>
+              <div class="video-actions">
+                <button type="button" class="btn-ghost slim" id="playFullBtn">Play / Pause</button>
+                <button type="button" class="btn-ghost slim" id="seekBackBtn">−5 s</button>
+                <button type="button" class="btn-ghost slim" id="seekFwdBtn">+5 s</button>
+                <a class="btn-ghost slim" id="downloadVideo" href="#" download target="_blank" rel="noopener">Download original</a>
+              </div>
+            </div>
+            <div class="full-video-frame">
+              <video id="fullVideo" controls playsinline preload="auto" controlslist="nodownload"></video>
+            </div>
+            <div class="video-meta-row">
+              <span id="videoTimeLabel">00:00 / 00:00</span>
+              <span id="videoSourceLabel" class="muted"></span>
+            </div>
+            <p class="video-tip">Scrub the timeline to browse the full alarm video. Keyframe and fire/smoke mask analytics are below.</p>
+          </div>
+
+          <div class="panel-block">
+            <div class="panel-title">
+              <h3>Visualization layers</h3>
+              <div class="tabs" id="galleryTabs" role="tablist">
+                <button type="button" class="tab active" data-layer="origin">Source media</button>
+                <button type="button" class="tab" data-layer="keyframe">Keyframe</button>
+                <button type="button" class="tab" data-layer="fire">Flame mask</button>
+                <button type="button" class="tab" data-layer="smoke">Smoke mask</button>
+                <button type="button" class="tab" data-layer="overlay">Overlay</button>
+              </div>
+            </div>
+            <div class="gallery-stage">
+              <button type="button" class="zoom-hint" id="openLightbox" title="Enlarge">Enlarge</button>
+              <div class="stage-frame" id="stageFrame">
+                <img id="stageImg" alt="Visualization" />
+                <video id="stageVideo" controls playsinline preload="metadata" hidden></video>
+              </div>
+              <div class="thumb-strip" id="thumbStrip"></div>
+            </div>
+          </div>
+
+          <div class="split-panels">
+            <div class="panel-block">
+              <div class="panel-title"><h3>Feature gauges</h3></div>
+              <div id="gaugeList" class="gauge-list"></div>
+            </div>
+            <div class="panel-block">
+              <div class="panel-title"><h3>Decision chain</h3></div>
+              <ol id="chainList" class="chain-list"></ol>
+            </div>
+          </div>
+
+          <details class="raw-json">
+            <summary>Full JSON response</summary>
+            <pre id="json"></pre>
+          </details>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div class="lightbox" id="lightbox" hidden aria-hidden="true">
+    <button type="button" class="lb-close" id="lbClose" aria-label="Close preview">Close</button>
+    <img id="lbImg" alt="" />
+  </div>
+
+  <footer class="foot">
+    <span>Missed real fires first · outputs kept in local task history</span>
+    <span>ForestGuard · Secondary False-Alarm Check</span>
+  </footer>
+
+  <script src="/static-en/app.js"></script>
+</body>
+</html>

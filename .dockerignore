@@ -1,0 +1,27 @@
+.git
+.venv
+venv
+.env
+.DS_Store
+**/__pycache__
+**/*.pyc
+**/*.pyo
+.idea
+.vscode
+*.docx
+
+# Runtime caches — never bake into image
+data/uploads/**
+!data/uploads/.gitkeep
+data/results/**
+!data/results/.gitkeep
+
+# Large sample media (~150MB+): skip for faster Render builds.
+# Online upload/analyze still works; batch-export needs samples locally.
+data/samples/**
+
+# Heavy docs / acceptance artifacts not needed at runtime
+docs/
+scripts/
+tests/
+english_web/README.md

@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ForestGuard · 林火二次判别平台</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Noto+Sans+SC:wght@400;500;600;700&family=Noto+Serif+SC:wght@600;700&family=Syne:wght@600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <div class="atmosphere" aria-hidden="true"></div>
+
+  <header class="topbar">
+    <div class="brand-block">
+      <div class="mark" aria-hidden="true"></div>
+      <div>
+        <p class="brand-en">ForestGuard Command</p>
+        <h1 class="brand-zh">林火烟火误报二次判别平台</h1>
+      </div>
+    </div>
+    <div class="top-meta">
+      <span class="pill live"><i></i>判别引擎在线</span>
+      <span class="pill soft">CV · Rules · VL</span>
+      <time id="clock"></time>
+    </div>
+  </header>
+
+  <div class="app-shell">
+    <!-- 历史任务 -->
+    <aside class="history-rail">
+      <div class="rail-head">
+        <h2>任务历史</h2>
+        <button type="button" id="clearHistory" class="linkish">清空</button>
+      </div>
+      <p class="rail-hint">识别完成后会出现在这里，点击可回看产出</p>
+      <ul id="historyList" class="history-list"></ul>
+      <div id="historyEmpty" class="history-empty">暂无任务 · 上传后自动归档</div>
+    </aside>
+
+    <!-- 主工作区 -->
+    <main class="main-stage">
+      <section class="ingest-card">
+        <div class="section-head row">
+          <div>
+            <h2>接入告警</h2>
+            <p>上传图片/视频，平台内直接查看判别产出</p>
+          </div>
+          <div class="pipeline compact" id="pipeline">
+            <div class="step" data-step="opencv"><b>1</b>特征</div>
+            <div class="step" data-step="rules"><b>2</b>规则</div>
+            <div class="step" data-step="llm"><b>3</b>多模态</div>
+            <div class="step" data-step="merge"><b>4</b>融合</div>
+          </div>
+        </div>
+
+        <form id="form" class="ingest-grid">
+          <label class="dropzone" id="dropzone" for="file">
+            <input type="file" id="file" accept="image/*,video/mp4,video/avi,video/quicktime,video/webm,.mp4,.avi,.mov,.mkv,.webm" required />
+            <div class="dz-body" id="dzBody">
+              <div class="dz-visual"><span class="dz-ring"></span><span class="dz-icon"></span></div>
+              <strong id="fileLabel">拖拽告警媒体到此处</strong>
+              <span class="dz-hint">JPG / PNG / MP4 / MOV · 识别后结果展示在下方</span>
+            </div>
+            <div class="preview-wrap" id="previewWrap" hidden>
+              <img id="previewImg" alt="预览" hidden />
+              <video id="previewVideo" muted playsinline hidden></video>
+              <span id="previewName" class="preview-name"></span>
+            </div>
+          </label>
+
+          <div class="ingest-side">
+            <label class="field">
+              <span>烟源附近是否有人</span>
+              <select id="person">
+                <option value="unknown">未知</option>
+                <option value="true">有（辅助）</option>
+                <option value="false">无</option>
+              </select>
+            </label>
+            <button type="submit" id="submitBtn" class="btn-primary">
+              <span class="btn-label">启动二次判别</span>
+              <span class="btn-spin" hidden></span>
+            </button>
+            <div class="batch-mini">
+              <button id="batchBtn" type="button" class="btn-ghost">样本库批量导出</button>
+              <p id="batchMsg" class="batch-msg"></p>
+            </div>
+          </div>
+        </form>
+      </section>
+
+      <!-- 产出台 -->
+      <section class="output-deck" id="outputDeck">
+        <div class="section-head">
+          <h2>判别产出</h2>
+          <p id="resultHint">等待任务 · 完成后在此直接呈现结论、图层与特征</p>
+        </div>
+
+        <div class="empty-board" id="resultEmpty">
+          <div class="empty-orbit" aria-hidden="true"></div>
+          <p class="empty-title">产出台待命</p>
+          <p>上传并判别后，将展示最终结论、四层可视化、特征仪表与决策链路</p>
+        </div>
+
+        <div class="process-board" id="processBoard" hidden>
+          <p class="eyebrow">PIPELINE RUNNING</p>
+          <p class="process-title" id="processTitle">正在二次判别…</p>
+          <div class="process-track">
+            <div class="process-bar"><i id="processBar"></i></div>
+            <p class="process-pct" id="processPct">0%</p>
+          </div>
+          <ul class="process-steps" id="processSteps">
+            <li data-p="opencv">特征提取 · OpenCV 抽帧与火烟掩膜</li>
+            <li data-p="rules">规则初判 · 误报类型评分</li>
+            <li data-p="llm">多模态复核 · 视觉大模型</li>
+            <li data-p="merge">融合决策 · 生成最终结论</li>
+          </ul>
+          <p class="process-note" id="processNote">请稍候，视频任务可能需要更长时间</p>
+        </div>
+
+        <div id="result" class="result-board" hidden>
+          <!-- 结论条 -->
+          <header class="verdict-hero" id="verdictHero">
+            <div>
+              <p class="eyebrow">FINAL VERDICT</p>
+              <div id="decision" class="decision"></div>
+              <p id="reason" class="reason"></p>
+            </div>
+            <div class="verdict-side">
+              <div class="stat-chip"><span>媒体</span><strong id="mediaTag">—</strong></div>
+              <div class="stat-chip"><span>置信度</span><strong id="confTag">—</strong></div>
+              <div class="stat-chip"><span>任务号</span><strong id="jobTag">—</strong></div>
+              <div class="stat-chip"><span>误报类型</span><strong id="typeTag">—</strong></div>
+            </div>
+          </header>
+
+          <!-- 完整视频回放（视频任务优先展示，可拖进度条） -->
+          <div class="panel-block" id="fullVideoPanel" hidden>
+            <div class="panel-title">
+              <h3>完整视频回放</h3>
+              <div class="video-actions">
+                <button type="button" class="btn-ghost slim" id="playFullBtn">播放 / 暂停</button>
+                <button type="button" class="btn-ghost slim" id="seekBackBtn">退 5 秒</button>
+                <button type="button" class="btn-ghost slim" id="seekFwdBtn">进 5 秒</button>
+                <a class="btn-ghost slim" id="downloadVideo" href="#" download target="_blank" rel="noopener">下载原视频</a>
+              </div>
+            </div>
+            <div class="full-video-frame">
+              <video id="fullVideo" controls playsinline preload="auto" controlslist="nodownload"></video>
+            </div>
+            <div class="video-meta-row">
+              <span id="videoTimeLabel">00:00 / 00:00</span>
+              <span id="videoSourceLabel" class="muted"></span>
+            </div>
+            <p class="video-tip">可拖动进度条浏览完整告警视频；下方为关键帧与火烟掩膜分析结果</p>
+          </div>
+
+          <!-- 可视化画廊 -->
+          <div class="panel-block">
+            <div class="panel-title">
+              <h3>可视化图层</h3>
+              <div class="tabs" id="galleryTabs" role="tablist">
+                <button type="button" class="tab active" data-layer="origin">原媒体</button>
+                <button type="button" class="tab" data-layer="keyframe">关键帧</button>
+                <button type="button" class="tab" data-layer="fire">火焰掩膜</button>
+                <button type="button" class="tab" data-layer="smoke">烟雾掩膜</button>
+                <button type="button" class="tab" data-layer="overlay">叠加结果</button>
+              </div>
+            </div>
+            <div class="gallery-stage">
+              <button type="button" class="zoom-hint" id="openLightbox" title="放大查看">放大</button>
+              <div class="stage-frame" id="stageFrame">
+                <img id="stageImg" alt="可视化" />
+                <video id="stageVideo" controls playsinline preload="metadata" hidden></video>
+              </div>
+              <div class="thumb-strip" id="thumbStrip"></div>
+            </div>
+          </div>
+
+          <!-- 特征 + 决策 -->
+          <div class="split-panels">
+            <div class="panel-block">
+              <div class="panel-title"><h3>特征仪表</h3></div>
+              <div id="gaugeList" class="gauge-list"></div>
+            </div>
+            <div class="panel-block">
+              <div class="panel-title"><h3>决策链路</h3></div>
+              <ol id="chainList" class="chain-list"></ol>
+            </div>
+          </div>
+
+          <details class="raw-json">
+            <summary>完整 JSON 响应</summary>
+            <pre id="json"></pre>
+          </details>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div class="lightbox" id="lightbox" hidden aria-hidden="true">
+    <button type="button" class="lb-close" id="lbClose" aria-label="关闭预览">关闭</button>
+    <img id="lbImg" alt="" />
+  </div>
+
+  <footer class="foot">
+    <span>防漏报优先 · 产出留存于本机任务历史</span>
+    <span>ForestGuard · Secondary False-Alarm Check</span>
+  </footer>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

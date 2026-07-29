@@ -1,0 +1,15 @@
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.env
+.DS_Store
+data/uploads/*
+data/results/*
+!data/uploads/.gitkeep
+!data/results/.gitkeep
+.idea/
+.vscode/
+
+# 运行产生的临时批量可忽略；验收 Excel 在 docs/ 下保留
+data/labels/批量测试_*.xlsx

@@ -1,0 +1,19 @@
+# Render Blueprint — https://render.com/docs/blueprint-spec
+# Free Web Service: expect cold start after ~15 min idle.
+
+services:
+  - type: web
+    name: forestguard
+    runtime: docker
+    plan: free
+    region: singapore
+    healthCheckPath: /health
+    envVars:
+      - key: LLM_ENABLED
+        value: "true"
+      - key: LLM_API_BASE
+        value: https://dashscope.aliyuncs.com/compatible-mode/v1
+      - key: LLM_MODEL
+        value: qwen-vl-max
+      - key: LLM_API_KEY
+        sync: false
