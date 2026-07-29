@@ -35,9 +35,11 @@ pip install -r requirements.txt
 uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 ```
 
-浏览器：http://127.0.0.1:8000  
+浏览器：http://127.0.0.1:8000 （默认英文）  
 
-英文界面（海外交付）：http://127.0.0.1:8000/en （源文件在 `english_web/`，不影响中文版）
+- 英文：`/` 或 `/en`  
+- 中文：`/zh`  
+- 源文件：英文在 `english_web/`，中文在 `app/templates`
 
 ### 公网部署（Render，无需本机常开）
 
